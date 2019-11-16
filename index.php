@@ -22,19 +22,14 @@ $mapping = Array(
 );
 function m($s) {
   global $mapping;
-  if (array_key_exists($s, $mapping)) {
-    return $mapping[$s];
-  }
-  else {
-    return $s;
-  }
+  return $mapping[$s];
 }
 
 ini_set('memory_limit', '2G');
 
 foreach($files as $filestr) {
-  $filename = substr($filestr, strpos($filestr, " "));
-  if (trim($filename) && ($handle = fopen(trim($filename), "r")) !== FALSE) {
+  $filename = trim(substr($filestr, strpos($filestr, " ")));
+  if ($filename && ($handle = fopen($filename, "r")) !== FALSE) {
     $headers = Array();
     for ($row = 1; ($line = fgetcsv($handle)) !== FALSE; $row++) {
       $num = count($line);
@@ -43,9 +38,12 @@ foreach($files as $filestr) {
       }
       else {
         for ($c=0; $c < $num; $c++) {
-          if ($headers[$c]=='datetime' || array_key_exists($headers[$c], $mapping)) {
+          if ($headers[$c]=='datetime') {
+            $datetime = trim($line[$c]);
+          }
+          else if (array_key_exists($headers[$c], $mapping)) {
             $value = trim($line[$c]);
-            $data[m($headers[$c])][] = ($value=="NaN"?0:$value);
+            $data[m($headers[$c])][$datetime] = ($value=="NaN"?0:$value);
           }
         }
       }
@@ -74,7 +72,7 @@ foreach($mapping as $label) {
     $first = false;
   }
   echo '{"mode":"lines","name":"'.$label.'","type":"scatter",' .
-    '"x":["'.implode('","',$data['datetime']).'"],' .
+    '"x":["'.implode('","',array_keys($data[$label])).'"],' .
     '"y":['.implode(',',$data[$label]).']}';
 }
 echo "],";
