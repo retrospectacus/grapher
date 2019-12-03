@@ -31,7 +31,8 @@ foreach($files as $filestr) {
   $filename = trim(substr($filestr, strpos($filestr, " ")));
   if ($filename && ($handle = fopen($filename, "r")) !== FALSE) {
     $headers = Array();
-    for ($row = 1; ($line = fgetcsv($handle)) !== FALSE; $row++) {
+    for ($row = 1; ($line0 = fgetcsv($handle)) !== FALSE; $row++) {
+      $line = $line0;
       $num = count($line);
       if ($row == 1) {
         $headers = array_map('trim', $line);
@@ -61,6 +62,18 @@ foreach($files as $filestr) {
 // echo "</pre>";
 
 include('header.html');
+echo "<small>Current Readings";
+foreach ($headers as $i => $key) {
+  if (array_key_exists($key, $mapping) && m($key) !== 'Zero') {
+    echo " | ".m($key)." = ".substr($line[$i],0,strpos($line[$i], '.')+3) . "°C";
+  }
+}
+
+echo "</small><br>
+";
+
+include('plot_lib.html');
+
 $title = "$d Day Plot";
 echo "[";
 $first = true;
