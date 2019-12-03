@@ -69,11 +69,13 @@ foreach ($headers as $i => $key) {
   }
 }
 
-echo "</small><br>
-";
+echo "<br>
+<form>
+ Graph <input name='d' value='$d' size='3'/> days <input type='submit' value='Go'/>
+</form>
+</small>";
 
 include('plot_lib.html');
-
 $title = "$d Day Plot";
 echo "[";
 $first = true;
