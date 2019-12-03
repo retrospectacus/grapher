@@ -1,4 +1,5 @@
 <?php
+$d = 1;
 if ($_GET['d']) {
   $d = intval($_GET['d']);
 }
@@ -28,8 +29,8 @@ function m($s) {
 ini_set('memory_limit', '2G');
 
 foreach($files as $filestr) {
-  $filename = trim(substr($filestr, strpos($filestr, " ")));
-  if ($filename && ($handle = fopen($filename, "r")) !== FALSE) {
+  $filename = trim(substr($filestr, strpos($filestr, ' ')));
+  if ($filename && ($handle = fopen($filename, 'r')) !== FALSE) {
     $headers = Array();
     for ($row = 1; ($line0 = fgetcsv($handle)) !== FALSE; $row++) {
       $line = $line0;
@@ -44,7 +45,7 @@ foreach($files as $filestr) {
           }
           else if (array_key_exists($headers[$c], $mapping)) {
             $value = trim($line[$c]);
-            $data[m($headers[$c])][$datetime] = ($value=="NaN"?0:$value);
+            $data[m($headers[$c])][$datetime] = ($value=='NaN'?0:$value);
           }
         }
       }
@@ -62,21 +63,22 @@ foreach($files as $filestr) {
 // echo "</pre>";
 
 include('header.html');
-echo "<small>Current Readings";
-foreach ($headers as $i => $key) {
-  if (array_key_exists($key, $mapping) && m($key) !== 'Zero') {
-    echo " | ".m($key)." = ".substr($line[$i],0,strpos($line[$i], '.')+3) . "°C";
-  }
-}
-
-echo "<br>
+echo "
+<small style='position:absolute;z-index:1'>
 <form>
  Graph <input name='d' value='$d' size='3'/> days <input type='submit' value='Go'/>
 </form>
-</small>";
+Current Readings<br/>";
+foreach ($headers as $i => $key) {
+  if (array_key_exists($key, $mapping) && m($key) !== 'Zero') {
+    echo ' | '.m($key).' = '.substr($line[$i],0,strpos($line[$i], '.')+3) . '°C';
+  }
+}
+
+echo "</small>";
 
 include('plot_lib.html');
-$title = "$d Day Plot";
+// $title = "$d Day Plot";
 echo "[";
 $first = true;
 foreach($mapping as $label) {
@@ -91,6 +93,6 @@ foreach($mapping as $label) {
     '"y":['.implode(',',$data[$label]).']}';
 }
 echo "],";
-include('template_line.php');
+include('template_line.html');
 include('footer.html');
 ?>
