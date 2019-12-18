@@ -1,9 +1,9 @@
 <?php
 $d = 1;
-if ($_GET['d']) {
+if (array_key_exists('d', $_GET)) {
   $d = intval($_GET['d']);
 }
-if (!$d || $d < 0) {
+if (!$d || $d < 1 || $d > 50) {
   $d = 1;
 }
 $files = `find /home/adama/retro-house/ -type f -name '*Enviroboard.csv' -mtime -$d -printf "%T@ %p\n" 2>/dev/null | sort -n `;
@@ -68,7 +68,7 @@ echo "
 <form>
  Graph <input name='d' value='$d' size='3'/> days <input type='submit' value='Go'/>
 </form>
-Current Readings<br/>";
+Current Readings at $datetime<br/>";
 foreach ($headers as $i => $key) {
   if (array_key_exists($key, $mapping) && m($key) !== 'Zero') {
     echo ' | '.m($key).' = '.substr($line[$i],0,strpos($line[$i], '.')+3) . '°C';
