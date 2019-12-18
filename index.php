@@ -3,9 +3,10 @@ $d = 1;
 if (array_key_exists('d', $_GET)) {
   $d = intval($_GET['d']);
 }
-if (!$d || $d < 1 || $d > 50) {
+if (!$d || $d < 1) {
   $d = 1;
 }
+$denominator = floor($d / 30) + 1;
 $files = `find /home/adama/retro-house/ -type f -name '*Enviroboard.csv' -mtime -$d -printf "%T@ %p\n" 2>/dev/null | sort -n `;
 
 $files = explode("\n", $files);
@@ -38,7 +39,7 @@ foreach($files as $filestr) {
       if ($row == 1) {
         $headers = array_map('trim', $line);
       }
-      else {
+      else if ($row%$denominator==0) {
         for ($c=0; $c < $num; $c++) {
           if ($headers[$c]=='datetime') {
             $datetime = trim($line[$c]);
@@ -67,7 +68,13 @@ echo "
 <small style='position:absolute;z-index:1'>
 <form>
  Graph <input name='d' value='$d' size='3'/> days <input type='submit' value='Go'/>
-</form>
+</form>";
+
+if ($denominator > 1) {
+  echo "<span style='color:red'>Warning: Large data set requested. Resolution has been reduced to $denominator-minute intervals.</span><br>";
+}
+
+echo "
 Current Readings at $datetime<br/>";
 foreach ($headers as $i => $key) {
   if (array_key_exists($key, $mapping) && m($key) !== 'Zero') {
