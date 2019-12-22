@@ -81,7 +81,7 @@ foreach ($headers as $i => $key) {
     echo ' | '.m($key).' = '.substr($line[$i],0,strpos($line[$i], '.')+3) . '°C';
   }
 }
-
+echo "<br><a target='_blank' href='https://weather.gc.ca/city/pages/yt-16_metric_e.html'>Weather from Environment Canada</a>";
 echo "</small>";
 
 include('plot_lib.html');
