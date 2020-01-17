@@ -87,6 +87,8 @@ function m($s) {
 }
 
 ini_set('memory_limit', '2G');
+$cutoff = '20200115-19:23:00';
+$adjust = 1;
 
 foreach($files as $filestr) {
   $filename = trim(substr($filestr, strpos($filestr, ' ')));
@@ -102,9 +104,15 @@ foreach($files as $filestr) {
         for ($c=0; $c < $num; $c++) {
           if ($headers[$c]=='datetime') {
             $datetime = trim($line[$c]);
+if ($adjust && (strcmp($datetime, $cutoff) > -1)) {
+  $adjust = 0;
+}
           }
           else if (array_key_exists($headers[$c], $mapping)) {
             $value = trim($line[$c]);
+if ($adjust && $value != 'NaN') {
+  $value = $value * 1.04 - 1.16;
+}
             $data[m($headers[$c])][$datetime] = ($value=='NaN'?0:$value);
           }
         }
