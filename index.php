@@ -86,6 +86,17 @@ function m($s) {
   return $mapping[$s];
 }
 
+function adjust($old) {
+//  return  $old * 1.04 - 1.16;
+  $beta = 3974;
+  $a = 0.00128583761237175;
+  $b = 0.000236038201072225;
+  $c = 0.0000000934658922353101;
+  $rp = 5000 * exp(-$beta/298.15);
+  $r = $rp * exp($beta/($old + 273.15));
+  return $a + ($b * log($r)) + ($c * pow(log($r),3)) - 273.15;
+}
+
 ini_set('memory_limit', '2G');
 $cutoff = '20200115-19:23:00';
 $adjust = 1;
@@ -111,7 +122,7 @@ if ($adjust && (strcmp($datetime, $cutoff) > -1)) {
           else if (array_key_exists($headers[$c], $mapping)) {
             $value = trim($line[$c]);
 if ($adjust && $value != 'NaN') {
-  $value = $value * 1.04 - 1.16;
+  $value = adjust($value);
 }
             $data[m($headers[$c])][$datetime] = ($value=='NaN'?0:$value);
           }
