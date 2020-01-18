@@ -87,7 +87,7 @@ function m($s) {
 }
 
 function adjust($old) {
-//  return  $old * 1.04 - 1.16;
+  return  $old * 1.04 - 1.16;
   $beta = 3974;
   $a = 0.00128583761237175;
   $b = 0.000236038201072225;
