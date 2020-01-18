@@ -93,8 +93,8 @@ function adjust($old) {
   $b = 0.000236038201072225;
   $c = 0.0000000934658922353101;
   $rp = 5000 * exp(-$beta/298.15);
-  $r = $rp * exp($beta/($old + 273.15));
-  return $a + ($b * log($r)) + ($c * pow(log($r),3)) - 273.15;
+  $r = $rp * exp($beta/($old+273.15));
+  return $a + $b * log($r) + $c * pow(log($r),3);
 }
 
 ini_set('memory_limit', '2G');
