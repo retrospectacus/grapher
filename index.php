@@ -115,15 +115,15 @@ foreach($files as $filestr) {
         for ($c=0; $c < $num; $c++) {
           if ($headers[$c]=='datetime') {
             $datetime = trim($line[$c]);
-if ($adjust && (strcmp($datetime, $cutoff) > -1)) {
-  $adjust = 0;
-}
+            if ($adjust && (strcmp($datetime, $cutoff) > -1)) {
+              $adjust = 0;
+            }
           }
           else if (array_key_exists($headers[$c], $mapping)) {
             $value = trim($line[$c]);
-if ($adjust && $value != 'NaN') {
-  $value = adjust($value);
-}
+            if ($adjust && $value != 'NaN') {
+              $value = adjust($value);
+            }
             $data[m($headers[$c])][$datetime] = ($value=='NaN'?0:$value);
           }
         }
