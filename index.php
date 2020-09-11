@@ -2,14 +2,16 @@
 $debug = 0;
 $denominator = 1;
 $denominator_cutoff = 10; // # of days to graph before scaling down
-$current = "Current";
+$history = false;
 
 function files_from_find_command($args) {
   global $debug;
+  
+  $command = "find /home/adama/retro-house/ -type f -name '*Enviroboard.csv' ${args} -printf \"%T@ %p\n\" 2>/dev/null | sort -n";
   if ($debug) {
-    error_log(">>> find /home/adama/retro-house/ -type f -name '*Enviroboard.csv' ${args} -printf \"%T@ %p\n\" 2>/dev/null | sort -n</pre>");
+    error_log(">>> $command");
   }
-  return `find /home/adama/retro-house/ -type f -name '*Enviroboard.csv' ${args} -printf "%T@ %p\n" 2>/dev/null | sort -n `;
+  return `${command}`;
 }
 
 function days_ago($days) {
@@ -30,6 +32,11 @@ function date_range($fromU, $toU = false) {  // Unix
   return "-newermt ${from} ! -newermt ${to}";
 }
 
+function set_denominator($days) {
+  global $denominator, $denominator_cutoff;
+  $denominator = floor($days / $denominator_cutoff) + 1;
+}
+
 if (array_key_exists('d', $_GET)) {
   $d = $_GET['d'];
   $dn = 0;
@@ -42,7 +49,7 @@ if (array_key_exists('d', $_GET)) {
     $hn = intval(substr($d, 0, -1));
     if ($hn >= 1) {
       $files = files_from_find_command(hours_ago($hn));
-      $denominator = floor($hn / 24 / $denominator_cutoff) + 1;
+      set_denominator($hn / 24);
     }
     else {
       $d = 1;
@@ -51,11 +58,17 @@ if (array_key_exists('d', $_GET)) {
   }
   else if ($dn >= 1) {
     $files = files_from_find_command(days_ago($dn));
-    $denominator = floor($dn / $denominator_cutoff) + 1;
+    set_denominator($dn);
+  }
+  else if ($dat && preg_match('/^\d{4}-\d{2}$/', $d)) {
+    $end_of_month = strtotime("$d +1 month -1 day");
+    $files = files_from_find_command(date_range($dat, $end_of_month));
+    set_denominator(30);
+    $history = true;
   }
   else if ($dat) {
     $files = files_from_find_command(date_range($dat));
-    $current = "";
+    $history = true;
   }
   else {
     $d = 1;
@@ -107,11 +120,11 @@ foreach($files as $filestr) {
     $headers = Array();
     for ($row = 1; ($line0 = fgetcsv($handle)) !== FALSE; $row++) {
       $line = $line0;
-      $num = count($line);
       if ($row == 1) {
         $headers = array_map('trim', $line);
       }
       else if ($row%$denominator==0) {
+        $num = count($line);
         for ($c=0; $c < $num; $c++) {
           if ($headers[$c]=='datetime') {
             $datetime = trim($line[$c]);
@@ -145,21 +158,27 @@ include('header.html');
 echo "
 <small style='position:absolute;z-index:1'>
 <form>
- Graph <input name='d' value='$d' size='5'/> <input type='submit' value='Go'/>
+ Graph <input name='d' value='$d' size='9'/> <input type='submit' value='Go'/>
+ <small>
+  <b>Eg</b>
+  • <a href='?d=2020-01'>2020-01</a>
+  • <a href='?d=2019-11-20'>2019-11-20</a>
+  • <a href='?d=Last+Tuesday'>Last Tuesday</a>
+  • <a href='?d=7'>7d</a>
+  • <a href='?d=24h'>24h</a>
+ </small>
 </form>";
 
 if ($denominator > 1) {
   echo "<span style='color:red'>
     Warning: Large data set requested. 
-    Resolution has been reduced to ${denominator}-minute intervals. 
-    You can also enter a single date like 2019-11-20 or \"Last Tuesday\".
+    Resolution has been reduced to ${denominator}-minute intervals.
     </span><br>";
 }
 
 if (!$data) {
   echo "<span style='color:red'>
-    Warning: No Data found for \"". addslashes($d) ."\". 
-    Enter a date in the past, a number of days, or a number with 'h' for hours.</span><br>";
+    Sorry: No Data found for \"". htmlentities($d) ."\".</span><br>";
 }
 
 function ft($v) { // format temp
@@ -168,15 +187,17 @@ function ft($v) { // format temp
 
 if ($data) {
   echo "
-  <big>". ft(min($line[10], $line[11])) ." /". ft(max($line[10], $line[11])) ." Outside ". ($dat? addslashes($d): '') ."</big>
-  <br>${current} Readings at $datetime<br/>";
+  <big>". ft($line[10]) ." /". ft($line[11]) ." Outside ". ($dat? addslashes($d): '') ."</big>
+  <br>" . ($history? 'Readings': 'Current readings') . " at $datetime<br/>";
   foreach ($headers as $i => $key) {
     if (array_key_exists($key, $mapping) && m($key) !== 'Zero') {
       echo ' | '.m($key).' = '.ft($line[$i]);
     }
   }
 }
-echo "<br><a target='_blank' href='https://weather.gc.ca/city/pages/yt-16_metric_e.html'>Weather from Environment Canada</a>";
+if (!$history) {
+  echo "<br><a target='_blank' href='https://weather.gc.ca/city/pages/yt-16_metric_e.html'>Weather from Environment Canada</a>";
+}
 echo "</small>";
 
 if ($data) {
@@ -184,6 +205,9 @@ if ($data) {
   echo "[";
   $first = true;
   foreach($mapping as $label) {
+    if (!array_key_exists($label, $data)) {
+      continue;
+    }
     if (!$first) {
       echo ",";
     }
