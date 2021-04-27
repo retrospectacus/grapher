@@ -85,16 +85,54 @@ $files = explode("\n", $files);
 
 $data = Array();
 $mapping = Array(
-  "T1~Unknown" => "Zero",
+  "T1~Unknown" => Array(
+    '20181228-09:23:18' => "TODO",
+    '20200115-19:23:00' => "Zero",
+  ),
+  "T1~Unknown" => "Sewer Pipe",
   "T2~Unknown" => "Crawlspace",
   "T3~Unknown" => "Outside E",
   "T4~Unknown" => "Outside W",
   "T5~Unknown" => "Living Room",
-  "T6~Unknown" => "Sump",
+  "T6~Unknown" => "Studio Floor",
   "T7~Unknown" => "Bedroom",
   "T8~Unknown" => "Garage",
+  "T9~Unknown" => "Sump Inlet",
+  "T10~Unknown" => "Sump Recirc",
+  "T11~Unknown" => "Sump Floor",
+  "T12~Unknown" => "Studio Bathroom",
+//  "A5-Unknown" => "A5",
+//  "A6~Unknown" => "House Humidity",
+  "A7~Unknown" => "Studio Humidity",
+  "A8~Unknown" => "Zero",
 );
-function m($s) {
+
+
+if (array_key_exists('h', $_GET)) {
+  $house = '&h';
+  unset(
+    $mapping['T1~Unknown'],
+    $mapping['T6~Unknown'],
+    $mapping['T9~Unknown'],
+    $mapping['T10~Unknown'],
+    $mapping['T11~Unknown'],
+    $mapping['T12~Unknown'],
+    $mapping['A7~Unknown']
+  );
+} else if (array_key_exists('b', $_GET)) {
+  $house = '&b';
+} else {
+  $house = '';
+  unset(
+    $mapping['T1~Unknown'],
+    $mapping['T2~Unknown'],
+    $mapping['T5~Unknown'],
+    $mapping['T7~Unknown'],
+    $mapping['T8~Unknown']
+  );
+}
+
+function m($s, $ts = 0) {
   global $mapping;
   return $mapping[$s];
 }
@@ -126,15 +164,15 @@ foreach($files as $filestr) {
       else if ($row%$denominator==0) {
         $num = count($line);
         for ($c=0; $c < $num; $c++) {
-          if ($headers[$c]=='datetime') {
-            $datetime = trim($line[$c]);
+          if ($headers[$c]=='timestamp') {
+            $datetime = date('Ymd-H:i:s', (int)(intval($line[$c])/1000));
             if ($adjust && (strcmp($datetime, $cutoff) > -1)) {
               $adjust = 0;
             }
           }
           else if (array_key_exists($headers[$c], $mapping)) {
             $value = trim($line[$c]);
-            if ($adjust && $value != 'NaN') {
+            if ($adjust && $value != 'NaN' && strpos($headers[$c], "A") != 1) {
               $value = adjust($value);
             }
             $data[m($headers[$c])][$datetime] = ($value=='NaN'?0:$value);
@@ -159,13 +197,14 @@ echo "
 <small style='position:absolute;z-index:1'>
 <form>
  Graph <input name='d' value='$d' size='9'/> <input type='submit' value='Go'/>
+ " . ($house === '&b' ? '<input type="hidden" name="b" />' : ($house ? '<input type="hidden" name="h" />': '')) . "
  <small>
   <b>Eg</b>
-  • <a href='?d=2020-01'>2020-01</a>
-  • <a href='?d=2019-11-20'>2019-11-20</a>
-  • <a href='?d=Last+Tuesday'>Last Tuesday</a>
-  • <a href='?d=7'>7d</a>
-  • <a href='?d=24h'>24h</a>
+  • <a href='?d=2020-01$house'>2020-01</a>
+  • <a href='?d=2019-11-20$house'>2019-11-20</a>
+  • <a href='?d=Last+Tuesday$house'>Last Tuesday</a>
+  • <a href='?d=7$house'>7d</a>
+  • <a href='?d=24h$house'>24h</a>
  </small>
 </form>";
 
@@ -185,13 +224,26 @@ function ft($v) { // format temp
   return substr($v,0,strpos($v, '.')+3) . '°C';
 }
 
+function fh($v) { // format humidity
+  return substr($v,0,strpos($v, '.')+3) . '%H';
+}
+
 if ($data) {
   echo "
   <big>". ft($line[10]) ." /". ft($line[11]) ." Outside ". ($dat? addslashes($d): '') ."</big>
   <br>" . ($history? 'Readings': 'Current readings') . " at $datetime<br/>";
   foreach ($headers as $i => $key) {
-    if (array_key_exists($key, $mapping) && m($key) !== 'Zero') {
-      echo ' | '.m($key).' = '.ft($line[$i]);
+    if (array_key_exists($key, $mapping)) {
+      $m = m($key);
+      if ($m == 'Zero') {
+        continue;
+      }
+      if (strpos($key, 'A') === 0) {
+        echo " | $m = ".fh($line[$i]);
+      }
+      else {
+        echo " | $m = ".ft($line[$i]);
+      }
     }
   }
 }
